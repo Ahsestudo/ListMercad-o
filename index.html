@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Super Mercadão</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h2><i class="fas fa-shopping-cart"></i> ListMercadão</h2>
+        </header>
+
+        <!-- Abas de Navegação -->
+        <div class="buttons">
+            <button type="button" class="btn-primary" onclick="mostrarAba('mercado')">
+                <i class="fas fa-shopping-basket"></i> Mercado
+            </button>
+            <button type="button" class="btn-warning" onclick="mostrarAba('tarefas')">
+                <i class="fas fa-tasks"></i> Tarefas
+            </button>
+        </div>
+
+        <!-- Aba Mercado -->
+        <div id="aba-mercado">
+            <div class="card">
+                <form id="gerenciarListas">
+                    <input type="text" id="nomeLista" placeholder="📝 Nome da nova lista" required />
+                    <div class="buttons">
+                        <button type="button" id="criarLista" class="btn-primary">
+                            <i class="fas fa-plus"></i> Criar Lista
+                        </button>
+                    </div>
+
+                    <div class="saldo-container">
+                        <label for="saldoInput"><i class="fas fa-wallet"></i> Saldo da Lista:</label>
+                        <div class="saldo-input-group">
+                            <input type="number" id="saldoInput" placeholder="R$ 0,00" step="0.01" min="0" />
+                            <button type="button" id="salvarSaldoBtn" class="btn-primary">
+                                <i class="fas fa-save"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <select id="selecionarLista">
+                        <option value="" disabled selected>📋 Selecione uma lista</option>
+                    </select>
+
+                    <button type="button" id="excluirLista" class="btn-danger">
+                        <i class="fas fa-trash"></i> Excluir Lista
+                    </button>
+                </form>
+            </div>
+
+            <div class="card">
+                <form id="listaMercadao">
+                    <input type="text" id="produtos" placeholder="🛒 Nome do produto..." required />
+                    <input type="number" id="quantidade" placeholder="📦 Quantidade..." step="0.01" required />
+                    <input type="number" id="valor" placeholder="💰 Valor unitário..." step="0.01" required />
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-cart-plus"></i> Adicionar
+                    </button>
+                </form>
+            </div>
+
+            <!-- Estatísticas -->
+            <div class="card" id="statsCard" style="display: none;">
+                <h3><i class="fas fa-chart-bar"></i> Estatísticas</h3>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <i class="fas fa-boxes"></i>
+                        <div id="totalProdutosStat">0</div>
+                        <small>Total Itens</small>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-receipt"></i>
+                        <div id="valorTotalStat">R$ 0,00</div>
+                        <small>Valor Total</small>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-wallet"></i>
+                        <div id="saldoRestanteStat">R$ 0,00</div>
+                        <small>Saldo Restante</small>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+            </div>
+
+            <div class="Listageral"></div>
+
+            <div class="buttons">
+                <button type="button" class="btn-secondary" id="clean">
+                    <i class="fas fa-broom"></i> Limpar
+                </button>
+                <button type="button" class="btn-primary" onclick="baixarLista()">
+                    <i class="fas fa-download"></i> Baixar
+                </button>
+                <button type="button" class="btn-primary" onclick="compartilharWhatsApp()">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+            </div>
+
+            <div class="totalList">
+                <div>
+                    <label for="totalListValor"><i class="fas fa-money-bill-wave"></i> Valor Total</label>
+                    <input type="text" id="totalListValor" readonly />
+                </div>
+                <div>
+                    <label for="totalList"><i class="fas fa-boxes"></i> Total Itens</label>
+                    <input type="text" id="totalList" readonly />
+                </div>
+                <div>
+                    <label for="totalComSaldo"><i class="fas fa-calculator"></i> Saldo Final</label>
+                    <input type="text" id="totalComSaldo" readonly />
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba Tarefas -->
+        <div id="aba-tarefas" style="display: none;">
+            <div class="card">
+                <h3><i class="fas fa-tasks"></i> Gerenciador de Tarefas</h3>
+                <input type="text" id="tarefaTitulo" placeholder="📋 Título da tarefa..." required />
+                <textarea id="tarefaDescricao" placeholder="📝 Descrição da tarefa..." rows="3"></textarea>
+                <input type="number" id="tarefaProgresso" placeholder="📊 Progresso (0-100)%" min="0" max="100"
+                    step="1" />
+                <button type="button" class="btn-primary" onclick="adicionarTarefa()">
+                    <i class="fas fa-plus"></i> Adicionar Tarefa
+                </button>
+            </div>
+
+            <div class="tarefas-container">
+                <div class="coluna-tarefas" id="colunasTarefas">
+                    <div class="coluna" id="coluna-pendente" ondrop="dropped(event)" ondragover="allowDrop(event)">
+                        <h4><i class="fas fa-clock"></i> Pendente</h4>
+                        <div id="tarefas-pendente"></div>
+                    </div>
+                    <div class="coluna" id="coluna-andamento" ondrop="dropped(event)" ondragover="allowDrop(event)">
+                        <h4><i class="fas fa-spinner"></i> Em Andamento</h4>
+                        <div id="tarefas-andamento"></div>
+                    </div>
+                    <div class="coluna" id="coluna-concluida" ondrop="dropped(event)" ondragover="allowDrop(event)">
+                        <h4><i class="fas fa-check"></i> Concluída</h4>
+                        <div id="tarefas-concluida"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição -->
+    <div id="editModal" class="modal">
+        <div class="modal-content card">
+            <h3><i class="fas fa-edit"></i> Editar Produto</h3>
+            <input type="text" id="editProduto" placeholder="Nome do produto">
+            <input type="number" id="editQuantidade" placeholder="Quantidade" step="0.01">
+            <input type="number" id="editValor" placeholder="Valor unitário" step="0.01">
+            <div class="modal-buttons">
+                <button type="button" class="btn-danger" onclick="fecharModal()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn-primary" onclick="salvarEdicao()">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Tarefa -->
+    <div id="editTarefaModal" class="modal">
+        <div class="modal-content card">
+            <h3><i class="fas fa-edit"></i> Editar Tarefa</h3>
+            <input type="text" id="editTarefaTitulo" placeholder="Título da tarefa">
+            <textarea id="editTarefaDescricao" placeholder="Descrição da tarefa..." rows="3"></textarea>
+            <input type="number" id="editTarefaProgresso" placeholder="Progresso (0-100)%" min="0" max="100" step="1" />
+            <div class="modal-buttons">
+                <button type="button" class="btn-danger" onclick="fecharTarefaModal()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn-primary" onclick="salvarEdicaoTarefa()">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="assets/js/app.js"></script>
+</body>
+
+</html>

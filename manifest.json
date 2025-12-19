@@ -1,0 +1,9 @@
+{
+  "name": "ListMercadão",
+  "short_name": "Mercadão",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fd811f",
+  "theme_color": "#fd811f",
+  "icons": []
+}
