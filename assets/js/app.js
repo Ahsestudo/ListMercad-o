@@ -508,20 +508,81 @@ if (dom.vozBtn) {
     }
 }
 
-function interpretarVoz(frase) {
-    let texto = frase.toLowerCase().trim().replace(/^adicionar\s+/, "");
-    const numeros = {um:1, uma:1, dois:2, duas:2, tres:3, três:3, quatro:4, cinco:5, seis:6, sete:7, oito:8, nove:9, dez:10};
-    Object.entries(numeros).forEach(([p,n]) => texto = texto.replace(new RegExp(`^${p}\\s+`, "i"), `${n} `));
-    const m = texto.match(/^(\d+(?:[.,]\d+)?)\s+(.+?)\s+(?:a|por|de)\s+(\d+(?:[.,]\d+)?)\s*(?:reais?|real)?(?:\s+cada)?$/i);
+function numeroFaladoPt(texto) {
+    if (!texto) return NaN;
+    let t = texto.toLowerCase().trim().replace(/\b(um|uma)\b/g, "1");
+    t = t.replace(/\bdois|duas\b/g, "2").replace(/\btr[eê]s\b/g, "3")
+         .replace(/\bquatro\b/g, "4").replace(/\bcinco\b/g, "5")
+         .replace(/\bseis\b/g, "6").replace(/\bsete\b/g, "7")
+         .replace(/\boito\b/g, "8").replace(/\bnove\b/g, "9").replace(/\bdez\b/g, "10");
+    const n = parseFloat(t.replace(",", "."));
+    return Number.isFinite(n) ? n : NaN;
+}
+
+function precoFaladoPt(texto) {
+    let t = texto.toLowerCase().trim()
+        .replace(/r\$/g, "")
+        .replace(/\s+/g, " ");
+
+    // Ex.: "5 reais e 99 centavos" / "5 real e 50 centavos"
+    let m = t.match(/(\d+(?:[.,]\d+)?)\s*reais?\s*(?:e\s*)?(\d{1,2})?\s*(?:centavos?)?/i);
     if (m) {
-        dom.quantidade.value = m[1].replace(",", "."); dom.produtos.value = m[2].trim(); dom.valor.value = m[3].replace(",", ".");
-        mostrarToast("success", `Entendi: ${dom.quantidade.value} ${dom.produtos.value} a R$ ${Number(dom.valor.value).toFixed(2)}.`);
-    } else {
-        const simples = texto.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/);
-        if (simples) { dom.quantidade.value = simples[1].replace(",", "."); dom.produtos.value = simples[2].trim(); }
-        else { dom.quantidade.value = dom.quantidade.value || "1"; dom.produtos.value = texto; }
-        dom.valor.focus(); mostrarToast("info", "Produto reconhecido. Informe o valor e toque em Adicionar.");
+        const reais = parseFloat(m[1].replace(",", "."));
+        const centavos = m[2] ? parseInt(m[2], 10) : 0;
+        return reais + centavos / 100;
     }
+
+    // Ex.: "5 e 99", "5,99", "5.99" ou "5"
+    m = t.match(/^(\d+)(?:\s+e\s+(\d{1,2})|[.,](\d{1,2}))?(?:\s*(?:reais?|real))?(?:\s*cada)?$/i);
+    if (m) {
+        const reais = parseInt(m[1], 10);
+        const cents = m[2] ?? m[3];
+        return cents != null ? reais + parseInt(cents, 10) / 100 : reais;
+    }
+    return NaN;
+}
+
+function interpretarVoz(frase) {
+    let texto = frase.toLowerCase().trim()
+        .replace(/^adicionar\s+/, "")
+        .replace(/^adiciona\s+/, "")
+        .replace(/^colocar\s+/, "")
+        .replace(/^coloca\s+/, "");
+
+    const qtdMatch = texto.match(/^(\d+(?:[.,]\d+)?|um|uma|dois|duas|tr[eê]s|quatro|cinco|seis|sete|oito|nove|dez)\s+(?:unidades?\s+(?:de\s+)?)?/i);
+    let quantidade = 1;
+    if (qtdMatch) {
+        quantidade = numeroFaladoPt(qtdMatch[1]);
+        texto = texto.slice(qtdMatch[0].length).trim();
+    }
+
+    // Separa o produto do preço. Aceita: "a", "por", "de", "custando" e "valor de".
+    const precoMatch = texto.match(/^(.*?)\s+(?:a|por|de|custando|valor\s+de)\s+(.+?)(?:\s+cada)?$/i);
+    if (precoMatch) {
+        const produto = precoMatch[1].trim();
+        const preco = precoFaladoPt(precoMatch[2].replace(/\s+cada$/i, "").trim());
+        if (produto && Number.isFinite(preco) && preco > 0 && quantidade > 0) {
+            dom.produtos.value = produto;
+            dom.quantidade.value = quantidade;
+            dom.valor.value = preco.toFixed(2);
+            const total = quantidade * preco;
+            mostrarToast("success", `🎤 Entendi: ${quantidade} ${produto} × R$ ${preco.toFixed(2)} = R$ ${total.toFixed(2)}.`, {
+                tempo: 10000,
+                acoes: [
+                    { texto: "✓ Adicionar", onClick: () => dom.adicionar.requestSubmit() },
+                    { texto: "✏️ Corrigir", onClick: () => dom.produtos.focus() }
+                ]
+            });
+            return;
+        }
+    }
+
+    // Sem preço: mantém produto/quantidade e permite completar manualmente.
+    dom.quantidade.value = quantidade;
+    dom.produtos.value = texto;
+    dom.valor.value = "";
+    dom.valor.focus();
+    mostrarToast("info", "Produto e quantidade reconhecidos. Fale também o preço, por exemplo: ‘3 leites a 5 reais e 99 centavos cada’. ");
 }
 
 // Instalação PWA

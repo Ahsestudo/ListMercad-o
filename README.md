@@ -42,3 +42,8 @@ https://SEU-USUARIO.github.io/listmercadao/
 ## 👤 Autor
 **Alexssandro Ferreira da Silva**  
 Designer & Desenvolvedor Frontend
+
+## Versão 2.1
+- Comando de voz aprimorado para reconhecer produto, quantidade e valor unitário.
+- Confirmação antes de adicionar o item reconhecido por voz.
+- Exemplos: “Adicionar 3 leites a 5 reais e 99 centavos cada” e “Adicionar 2 arroz por 25 reais”.
