@@ -4,7 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Super Mercadão</title>
+    <title>ListMercadão</title>
+    <meta name="theme-color" content="#fd811f">
+    <meta name="description" content="Lista de compras instalável, com marcação de itens e comando de voz.">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -58,13 +62,24 @@
 
             <div class="card">
                 <form id="listaMercadao">
-                    <input type="text" id="produtos" placeholder="🛒 Nome do produto..." required />
+                    <div class="voice-input-row">
+                        <input type="text" id="produtos" placeholder="🛒 Nome do produto..." required />
+                        <button type="button" id="vozBtn" class="btn-voice" title="Adicionar produto por voz" aria-label="Adicionar produto por voz"><i class="fas fa-microphone"></i></button>
+                    </div>
+                    <small class="voice-help">Ex.: “Adicionar 3 leites a 5 reais cada” ou “Adicionar arroz”.</small>
                     <input type="number" id="quantidade" placeholder="📦 Quantidade..." step="0.01" required />
                     <input type="number" id="valor" placeholder="💰 Valor unitário..." step="0.01" required />
                     <button type="submit" class="btn-primary">
                         <i class="fas fa-cart-plus"></i> Adicionar
                     </button>
                 </form>
+            </div>
+
+            <div class="card compra-progresso" id="compraProgressoCard" style="display:none;">
+                <div class="compra-progresso-topo"><strong><i class="fas fa-check-circle"></i> Progresso da compra</strong><span id="compraProgressoTexto">0 de 0 pegos</span></div>
+                <div class="progress-bar compra-progress-bar"><div class="progress-fill" id="compraProgressBar"></div></div>
+                <div class="compra-valores"><span>🛒 Já pego: <strong id="valorPego">R$ 0,00</strong></span><span>⏳ Falta: <strong id="valorFalta">R$ 0,00</strong></span></div>
+                <button type="button" id="desmarcarTodos" class="btn-secondary"><i class="fas fa-rotate-left"></i> Desmarcar todos</button>
             </div>
 
             <!-- Estatísticas -->
@@ -95,6 +110,7 @@
             <div class="Listageral"></div>
 
             <div class="buttons">
+                <button type="button" id="instalarApp" class="btn-warning" style="display:none;"><i class="fas fa-mobile-screen-button"></i> Instalar App</button>
                 <button type="button" class="btn-secondary" id="clean">
                     <i class="fas fa-broom"></i> Limpar
                 </button>

@@ -35,6 +35,14 @@ const dom = {
     editProduto: document.getElementById("editProduto"),
     editQuantidade: document.getElementById("editQuantidade"),
     editValor: document.getElementById("editValor"),
+    vozBtn: document.getElementById("vozBtn"),
+    compraProgressoCard: document.getElementById("compraProgressoCard"),
+    compraProgressoTexto: document.getElementById("compraProgressoTexto"),
+    compraProgressBar: document.getElementById("compraProgressBar"),
+    valorPego: document.getElementById("valorPego"),
+    valorFalta: document.getElementById("valorFalta"),
+    desmarcarTodos: document.getElementById("desmarcarTodos"),
+    instalarApp: document.getElementById("instalarApp"),
     // Novos elementos para tarefas
     tarefaTitulo: document.getElementById("tarefaTitulo"),
     tarefaDescricao: document.getElementById("tarefaDescricao"),
@@ -163,66 +171,61 @@ function atualizarEstatisticas(total, quantidade, saldoAtual) {
 function atualizarLista() {
     if (!listaAtiva) {
         dom.listaVisual.innerHTML = "";
-        dom.totalProdutos.value = "";
-        dom.totalValor.value = "";
-        dom.saldoInput.value = "";
-        dom.totalComSaldo.value = "";
-        dom.statsCard.style.display = "none";
+        dom.totalProdutos.value = ""; dom.totalValor.value = ""; dom.saldoInput.value = ""; dom.totalComSaldo.value = "";
+        dom.statsCard.style.display = "none"; dom.compraProgressoCard.style.display = "none";
         return;
     }
 
-    const itens = listas[listaAtiva];
+    const itens = listas[listaAtiva] || [];
+    // Compatibilidade com listas antigas: itens sem o campo comprado começam desmarcados.
+    itens.forEach(item => { if (typeof item.comprado !== "boolean") item.comprado = false; });
     dom.listaVisual.innerHTML = "";
-    let total = 0;
-    let quantidade = 0;
-
-    itens.forEach((item, i) => {
-        total += item.valorTotal;
-        quantidade += item.quantidade;
-
-        const el = document.createElement("div");
-        el.className = "list-produtos";
-        el.innerHTML = `
-            <span><i class="fas fa-box"></i> ${item.nome}</span>
-            <span><i class="fas fa-hashtag"></i> ${item.quantidade}</span>
-            <span><i class="fas fa-tag"></i> R$${item.valor.toFixed(2)}</span>
-            <span><i class="fas fa-receipt"></i> R$${item.valorTotal.toFixed(2)}</span>
-            <button class="btn-primary" onclick="editarItem(${i})" title="Editar produto">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn-danger" onclick="removerItem(${i})" title="Remover produto">
-                <i class="fas fa-trash"></i>
-            </button>
-        `;
-        dom.listaVisual.appendChild(el);
+    let total = 0, quantidade = 0, valorPego = 0, pegos = 0;
+    itens.forEach(item => {
+        total += Number(item.valorTotal) || 0; quantidade += Number(item.quantidade) || 0;
+        if (item.comprado) { valorPego += Number(item.valorTotal) || 0; pegos++; }
     });
 
-    dom.totalProdutos.value = quantidade;
-    dom.totalValor.value = `R$ ${total.toFixed(2)}`;
-
-    const saldoAtual = saldos[listaAtiva] ?? 0;
-    dom.saldoInput.value = saldoAtual.toFixed(2);
-
-    const totalComSaldo = saldoAtual - total;
-    dom.totalComSaldo.value = `R$ ${totalComSaldo.toFixed(2)}`;
-
-    // Atualizar estatísticas
-    atualizarEstatisticas(total, quantidade, saldoAtual);
-    dom.statsCard.style.display = "block";
-
-    // Alertas visuais
-    if (totalComSaldo < 0) {
-        dom.totalComSaldo.style.color = "#ff4757";
-        mostrarToast("warn", `Atenção! Você ultrapassou o saldo em R$ ${Math.abs(totalComSaldo).toFixed(2)}`, {
-            prioridade: "alta",
-            tempo: 8000
+    itens.map((item, index) => ({item, index}))
+        .sort((a,b) => Number(a.item.comprado) - Number(b.item.comprado))
+        .forEach(({item, index}) => {
+            const el = document.createElement("div");
+            el.className = `list-produtos ${item.comprado ? "produto-comprado" : ""}`;
+            el.innerHTML = `
+                <button class="btn-check ${item.comprado ? "checked" : ""}" onclick="alternarComprado(${index})" title="${item.comprado ? "Desmarcar" : "Marcar como pego"}">
+                    <i class="fas ${item.comprado ? "fa-check-circle" : "fa-circle"}"></i> ${item.comprado ? "Peguei" : "Pegar"}
+                </button>
+                <span class="produto-texto"><i class="fas fa-box"></i> ${item.nome}</span>
+                <span><i class="fas fa-hashtag"></i> ${item.quantidade}</span>
+                <span><i class="fas fa-tag"></i> R$ ${Number(item.valor).toFixed(2)}</span>
+                <span><i class="fas fa-receipt"></i> R$ ${Number(item.valorTotal).toFixed(2)}</span>
+                <button class="btn-primary" onclick="editarItem(${index})" title="Editar produto"><i class="fas fa-edit"></i></button>
+                <button class="btn-danger" onclick="removerItem(${index})" title="Remover produto"><i class="fas fa-trash"></i></button>`;
+            dom.listaVisual.appendChild(el);
         });
-    } else if (totalComSaldo < saldoAtual * 0.1) {
-        dom.totalComSaldo.style.color = "#ffa502";
-        mostrarToast("info", "Cuidado! Seu saldo está acabando.", { tempo: 6000 });
-    } else {
-        dom.totalComSaldo.style.color = "#2ed573";
-    }
+
+    dom.totalProdutos.value = quantidade; dom.totalValor.value = `R$ ${total.toFixed(2)}`;
+    const saldoAtual = saldos[listaAtiva] ?? 0; dom.saldoInput.value = Number(saldoAtual).toFixed(2);
+    const saldoFinal = saldoAtual - total; dom.totalComSaldo.value = `R$ ${saldoFinal.toFixed(2)}`;
+    atualizarEstatisticas(total, quantidade, saldoAtual); dom.statsCard.style.display = "block";
+
+    const percentual = itens.length ? (pegos / itens.length) * 100 : 0;
+    dom.compraProgressoCard.style.display = "block";
+    dom.compraProgressoTexto.textContent = `${pegos} de ${itens.length} pegos`;
+    dom.compraProgressBar.style.width = `${percentual}%`;
+    dom.valorPego.textContent = `R$ ${valorPego.toFixed(2)}`;
+    dom.valorFalta.textContent = `R$ ${Math.max(0, total - valorPego).toFixed(2)}`;
+
+    if (saldoFinal < 0) dom.totalComSaldo.style.color = "#ff4757";
+    else if (saldoAtual > 0 && saldoFinal < saldoAtual * 0.1) dom.totalComSaldo.style.color = "#ffa502";
+    else dom.totalComSaldo.style.color = "#2ed573";
+    salvarListas();
+}
+
+function alternarComprado(index) {
+    if (!listaAtiva || !listas[listaAtiva][index]) return;
+    listas[listaAtiva][index].comprado = !listas[listaAtiva][index].comprado;
+    salvarListas(); atualizarLista();
 }
 
 // Editar produto
@@ -260,7 +263,8 @@ function salvarEdicao() {
         nome: novoNome,
         quantidade: novaQuantidade,
         valor: novoValor,
-        valorTotal: novaQuantidade * novoValor
+        valorTotal: novaQuantidade * novoValor,
+        comprado: Boolean(listas[listaAtiva][itemEditando].comprado)
     };
 
     salvarListas();
@@ -302,7 +306,8 @@ dom.adicionar.addEventListener("submit", e => {
         nome,
         quantidade: qtde,
         valor,
-        valorTotal: qtde * valor
+        valorTotal: qtde * valor,
+        comprado: false
     });
 
     salvarListas();
@@ -418,20 +423,23 @@ function obterTextoLista() {
 
     const saldoAtual = saldos[listaAtiva] ?? 0;
     const total = listas[listaAtiva].reduce((acc, item) => acc + item.valorTotal, 0);
-    const totalComSaldo = total - saldoAtual;
+    const saldoFinal = saldoAtual - total;
 
     let texto = `🛒 LISTA: ${listaAtiva}\n`;
     texto += "═".repeat(50) + "\n\n";
 
     listas[listaAtiva].forEach((item, index) => {
-        texto += `${index + 1}. ${item.nome}\n`;
+        texto += `${item.comprado ? "✅" : "☐"} ${index + 1}. ${item.nome}\n`;
         texto += `   📦 ${item.quantidade} x R$ ${item.valor.toFixed(2)} = R$ ${item.valorTotal.toFixed(2)}\n\n`;
     });
 
     texto += "═".repeat(50) + "\n";
     texto += `💰 VALOR TOTAL: R$ ${total.toFixed(2)}\n`;
     texto += `💳 SALDO DISPONÍVEL: R$ ${saldoAtual.toFixed(2)}\n`;
-    texto += `💵 VALOR FINAL: R$ ${totalComSaldo.toFixed(2)}\n`;
+    const valorPego = listas[listaAtiva].filter(i => i.comprado).reduce((acc, item) => acc + item.valorTotal, 0);
+    texto += `🛒 JÁ PEGO: R$ ${valorPego.toFixed(2)}\n`;
+    texto += `⏳ FALTA PEGAR: R$ ${(total - valorPego).toFixed(2)}\n`;
+    texto += `💵 SALDO FINAL: R$ ${saldoFinal.toFixed(2)}\n`;
     texto += `🕒 ${new Date().toLocaleString('pt-BR')}`;
 
     return texto;
@@ -474,6 +482,55 @@ function compartilharWhatsApp() {
     const url = `https://wa.me/?text=${texto}`;
     window.open(url, "_blank");
 }
+
+// Desmarcar todos os produtos
+dom.desmarcarTodos?.addEventListener("click", () => {
+    if (!listaAtiva) return mostrarToast("error", "Selecione uma lista primeiro.");
+    listas[listaAtiva].forEach(item => item.comprado = false);
+    salvarListas(); atualizarLista(); mostrarToast("success", "Todos os itens foram desmarcados.");
+});
+
+// Comando de voz (Chrome/Android e navegadores compatíveis)
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (dom.vozBtn) {
+    if (!SpeechRecognition) {
+        dom.vozBtn.disabled = true; dom.vozBtn.title = "Reconhecimento de voz não disponível neste navegador";
+    } else {
+        const recognition = new SpeechRecognition();
+        recognition.lang = "pt-BR"; recognition.interimResults = false; recognition.maxAlternatives = 1;
+        dom.vozBtn.addEventListener("click", () => {
+            if (!listaAtiva) return mostrarToast("error", "Selecione uma lista antes de usar a voz.");
+            try { recognition.start(); dom.vozBtn.classList.add("ouvindo"); mostrarToast("info", "🎤 Estou ouvindo..."); } catch(e) {}
+        });
+        recognition.onend = () => dom.vozBtn.classList.remove("ouvindo");
+        recognition.onerror = () => { dom.vozBtn.classList.remove("ouvindo"); mostrarToast("error", "Não consegui reconhecer. Tente novamente."); };
+        recognition.onresult = e => interpretarVoz(e.results[0][0].transcript);
+    }
+}
+
+function interpretarVoz(frase) {
+    let texto = frase.toLowerCase().trim().replace(/^adicionar\s+/, "");
+    const numeros = {um:1, uma:1, dois:2, duas:2, tres:3, três:3, quatro:4, cinco:5, seis:6, sete:7, oito:8, nove:9, dez:10};
+    Object.entries(numeros).forEach(([p,n]) => texto = texto.replace(new RegExp(`^${p}\\s+`, "i"), `${n} `));
+    const m = texto.match(/^(\d+(?:[.,]\d+)?)\s+(.+?)\s+(?:a|por|de)\s+(\d+(?:[.,]\d+)?)\s*(?:reais?|real)?(?:\s+cada)?$/i);
+    if (m) {
+        dom.quantidade.value = m[1].replace(",", "."); dom.produtos.value = m[2].trim(); dom.valor.value = m[3].replace(",", ".");
+        mostrarToast("success", `Entendi: ${dom.quantidade.value} ${dom.produtos.value} a R$ ${Number(dom.valor.value).toFixed(2)}.`);
+    } else {
+        const simples = texto.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/);
+        if (simples) { dom.quantidade.value = simples[1].replace(",", "."); dom.produtos.value = simples[2].trim(); }
+        else { dom.quantidade.value = dom.quantidade.value || "1"; dom.produtos.value = texto; }
+        dom.valor.focus(); mostrarToast("info", "Produto reconhecido. Informe o valor e toque em Adicionar.");
+    }
+}
+
+// Instalação PWA
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; if (dom.instalarApp) dom.instalarApp.style.display = "flex"; });
+dom.instalarApp?.addEventListener("click", async () => {
+    if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; dom.instalarApp.style.display = "none";
+});
+window.addEventListener("appinstalled", () => mostrarToast("success", "ListMercadão instalado no celular!"));
 
 // ========== SISTEMA DE TAREFAS ==========
 
@@ -729,6 +786,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Mostrar aba mercado por padrão
     mostrarAba('mercado');
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js').catch(console.error);
 });
 
 // Adicionar CSS para animação de saída do toast

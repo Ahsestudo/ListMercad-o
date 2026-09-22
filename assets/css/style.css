@@ -614,3 +614,17 @@ button:active {
         padding: 10px;
     }
 }
+/* ===== ListMercadão 2.0: compra, voz e PWA ===== */
+.voice-input-row { display:flex; gap:8px; align-items:center; }
+.voice-input-row input { flex:1; }
+.voice-input-row .btn-voice { width:52px; flex:0 0 52px; background:linear-gradient(135deg,#fd811f,#ff9a3d); }
+.voice-help { display:block; margin:6px 2px 4px; color:#636e72; }
+.btn-voice.ouvindo { animation:pulse 0.8s infinite; }
+.compra-progresso-topo, .compra-valores { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.compra-progress-bar { height:10px; margin:12px 0; }
+.compra-progresso .progress-fill { background:linear-gradient(135deg,#1fca45,#58e878); }
+.btn-check { background:#fff; color:#333; border:2px solid #cfd6dc; }
+.btn-check.checked { background:linear-gradient(135deg,#1fca45,#58e878); color:#071b0c; border-color:transparent; }
+.produto-comprado { opacity:.62; border-left-color:#1fca45; }
+.produto-comprado .produto-texto { text-decoration:line-through; }
+@media (min-width:768px) { .list-produtos .btn-check { width:auto; min-width:90px; } }
