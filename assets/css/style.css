@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(160deg, #0c0e1b 0%, #b36cfa 100%);
     min-height: 100vh;
     padding: 15px;
 }
@@ -628,3 +628,9 @@ button:active {
 .produto-comprado { opacity:.62; border-left-color:#1fca45; }
 .produto-comprado .produto-texto { text-decoration:line-through; }
 @media (min-width:768px) { .list-produtos .btn-check { width:auto; min-width:90px; } }
+
+/* Tarefas v2.2: progresso, prazo e alertas */
+.tarefa-progresso-editor{display:flex;align-items:center;gap:12px;margin:6px 0 12px}.tarefa-progresso-editor input[type=range]{flex:1}.tarefa-alerta-check{display:flex;align-items:center;gap:8px;margin:8px 0 14px}.tarefa-alerta-check input{width:auto}.tarefa-prazo{margin:10px 0 6px;font-size:.9rem;opacity:.9;display:flex;gap:7px;align-items:center}.progresso-controles{display:flex;align-items:center;gap:10px;margin-top:7px}.progresso-controles input[type=range]{flex:1;min-width:100px}.progresso-controles span{min-width:42px;text-align:right;font-weight:700}.tarefa-item.prazo-proximo{border-left:5px solid #f0ad4e}.tarefa-item.prazo-atrasado{border-left:5px solid #dc3545}.tarefa-item.prazo-atrasado .tarefa-prazo{font-weight:700}.tarefa-btn{padding:4px 8px!important;font-size:12px!important}
+
+/* Tarefas Plus */
+.task-extras{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}.task-extras label{display:flex;flex-direction:column;gap:5px}.task-extras input,.task-extras select{width:100%;box-sizing:border-box;padding:10px;border:1px solid #bbb;border-radius:7px}.task-tools{margin:14px 0}.task-tool-buttons,.task-inline{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:9px 0}.task-inline label{flex:1}.task-inline input[type=text],.task-inline input:not([type]){flex:1;min-width:140px}.task-import{padding:10px;border:1px solid #aaa;border-radius:7px;cursor:pointer}.task-import input{display:none}.task-detail{margin:16px 0;max-height:45vh;overflow:auto}.task-detail h4{margin:16px 0 7px}.task-detail small{display:block}.task-badges{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.task-badges span{font-size:12px;padding:3px 7px;border-radius:12px;background:#e9edf4;color:#283343}.task-badges .priority-alta{background:#ffddb0}.task-badges .priority-urgente{background:#ffbdbd}.task-badges .priority-baixa{background:#d7f4d8}.task-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.task-calendar>strong{text-align:center}.task-day{min-height:75px;padding:5px;border:1px solid #ddd;border-radius:6px;overflow-wrap:anywhere}.task-calendar-item{display:block;width:100%;margin:4px 0;padding:4px;border:0;border-radius:4px;background:#d9eaff;color:#142c48;text-align:left;cursor:pointer;font-size:11px}.task-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}.task-stats>div{padding:15px;background:#e9edf4;color:#283343;border-radius:10px;display:flex;flex-direction:column}.task-stats b{font-size:25px}@media(max-width:600px){.task-day{min-height:55px;padding:2px}.task-calendar-item{font-size:10px}}

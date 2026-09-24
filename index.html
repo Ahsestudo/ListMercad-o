@@ -144,14 +144,23 @@
                 <h3><i class="fas fa-tasks"></i> Gerenciador de Tarefas</h3>
                 <input type="text" id="tarefaTitulo" placeholder="📋 Título da tarefa..." required />
                 <textarea id="tarefaDescricao" placeholder="📝 Descrição da tarefa..." rows="3"></textarea>
-                <input type="number" id="tarefaProgresso" placeholder="📊 Progresso (0-100)%" min="0" max="100"
-                    step="1" />
-                <button type="button" class="btn-primary" onclick="adicionarTarefa()">
+                <label for="tarefaProgresso">📊 Progresso da tarefa</label>
+                <div class="tarefa-progresso-editor">
+                    <input type="range" id="tarefaProgresso" min="0" max="100" step="5" value="0"
+                        oninput="document.getElementById('tarefaProgressoValor').textContent=this.value+'%'" />
+                    <strong id="tarefaProgressoValor">0%</strong>
+                </div>
+                <label for="tarefaPrazo">⏰ Data e hora do prazo</label>
+                <input type="datetime-local" id="tarefaPrazo" />
+                <label class="tarefa-alerta-check">
+                    <input type="checkbox" id="tarefaAlerta" checked /> 🔔 Avisar quando o prazo chegar
+                </label>
+                <div class="task-extras"><label>🏷️ Etiqueta <input id="tarefaEtiqueta" placeholder="Ex.: Estudos, Projeto"></label><label>🚩 Prioridade <select id="tarefaPrioridade"><option value="baixa">Baixa</option><option value="media" selected>Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label><label>🔔 Lembrar <select id="tarefaLembrete"><option value="0">No horário do prazo</option><option value="15">15 minutos antes</option><option value="60">1 hora antes</option><option value="1440">1 dia antes</option></select></label><label>🔁 Repetir <select id="tarefaRecorrencia"><option value="nenhuma">Não repetir</option><option value="diaria">Diariamente</option><option value="semanal">Semanalmente</option><option value="mensal">Mensalmente</option></select></label></div><button type="button" class="btn-primary" onclick="adicionarTarefa()">
                     <i class="fas fa-plus"></i> Adicionar Tarefa
                 </button>
             </div>
 
-            <div class="tarefas-container">
+            <div class="card task-tools"><div class="task-tool-buttons"><button type="button" class="btn-primary" onclick="mostrarVisaoTarefas('quadro')">📋 Quadro</button><button type="button" class="btn-primary" onclick="mostrarVisaoTarefas('calendario')">📅 Calendário</button><button type="button" class="btn-primary" onclick="mostrarVisaoTarefas('painel')">📊 Produtividade</button><button type="button" class="btn-primary" onclick="exportarBackupTarefas()">💾 Backup</button><label class="task-import">📂 Restaurar backup <input type="file" accept="application/json,.json" onchange="importarBackupTarefas(this)"></label></div><label>Filtrar <input id="filtroTarefas" placeholder="Buscar título ou etiqueta" oninput="atualizarTarefas()"></label></div><div id="visaoCalendario" class="card" style="display:none"></div><div id="visaoPainel" class="card" style="display:none"></div><div class="tarefas-container" id="visaoQuadro">
                 <div class="coluna-tarefas" id="colunasTarefas">
                     <div class="coluna" id="coluna-pendente" ondrop="dropped(event)" ondragover="allowDrop(event)">
                         <h4><i class="fas fa-clock"></i> Pendente</h4>
@@ -194,8 +203,18 @@
             <h3><i class="fas fa-edit"></i> Editar Tarefa</h3>
             <input type="text" id="editTarefaTitulo" placeholder="Título da tarefa">
             <textarea id="editTarefaDescricao" placeholder="Descrição da tarefa..." rows="3"></textarea>
-            <input type="number" id="editTarefaProgresso" placeholder="Progresso (0-100)%" min="0" max="100" step="1" />
-            <div class="modal-buttons">
+            <label for="editTarefaProgresso">📊 Progresso</label>
+            <div class="tarefa-progresso-editor">
+                <input type="range" id="editTarefaProgresso" min="0" max="100" step="5" value="0"
+                    oninput="document.getElementById('editTarefaProgressoValor').textContent=this.value+'%'" />
+                <strong id="editTarefaProgressoValor">0%</strong>
+            </div>
+            <label for="editTarefaPrazo">⏰ Data e hora do prazo</label>
+            <input type="datetime-local" id="editTarefaPrazo" />
+            <label class="tarefa-alerta-check">
+                <input type="checkbox" id="editTarefaAlerta" /> 🔔 Avisar quando o prazo chegar
+            </label>
+            <div class="task-extras"><label>🏷️ Etiqueta <input id="editTarefaEtiqueta" placeholder="Ex.: Estudos, Projeto"></label><label>🚩 Prioridade <select id="editTarefaPrioridade"><option value="baixa">Baixa</option><option value="media" selected>Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label><label>🔔 Lembrar <select id="editTarefaLembrete"><option value="0">No horário do prazo</option><option value="15">15 minutos antes</option><option value="60">1 hora antes</option><option value="1440">1 dia antes</option></select></label><label>🔁 Repetir <select id="editTarefaRecorrencia"><option value="nenhuma">Não repetir</option><option value="diaria">Diariamente</option><option value="semanal">Semanalmente</option><option value="mensal">Mensalmente</option></select></label></div><div class="modal-buttons">
                 <button type="button" class="btn-danger" onclick="fecharTarefaModal()">
                     <i class="fas fa-times"></i> Cancelar
                 </button>
@@ -209,6 +228,7 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="assets/js/app.js"></script>
+    <script src="assets/js/tarefas-plus.js"></script>
 </body>
 
 </html>

@@ -1,3 +1,16 @@
+/**
+ * ListMercadão — funcionalidades principais.
+ *
+ * Dependências: index.html, style.css e APIs nativas do navegador.
+ * Carregamento: antes de tarefas-plus.js, que complementa o quadro de tarefas.
+ * Persistência: localStorage (dados exclusivos deste navegador/origem).
+ */
+'use strict';
+
+// ============================================================================
+// ESTADO GLOBAL E REFERÊNCIAS DOM
+// Dados mantidos no navegador. Preserve as chaves de localStorage para manter compatibilidade com versões anteriores.
+// ============================================================================
 let listas = {};
 let listaAtiva = "";
 let saldos = {};
@@ -47,13 +60,22 @@ const dom = {
     tarefaTitulo: document.getElementById("tarefaTitulo"),
     tarefaDescricao: document.getElementById("tarefaDescricao"),
     tarefaProgresso: document.getElementById("tarefaProgresso"),
+    tarefaPrazo: document.getElementById("tarefaPrazo"),
+    tarefaAlerta: document.getElementById("tarefaAlerta"),
     editTarefaModal: document.getElementById("editTarefaModal"),
     editTarefaTitulo: document.getElementById("editTarefaTitulo"),
     editTarefaDescricao: document.getElementById("editTarefaDescricao"),
-    editTarefaProgresso: document.getElementById("editTarefaProgresso")
+    editTarefaProgresso: document.getElementById("editTarefaProgresso"),
+    editTarefaPrazo: document.getElementById("editTarefaPrazo"),
+    editTarefaAlerta: document.getElementById("editTarefaAlerta")
 };
 
 // Sistema de Toast Melhorado
+
+// ============================================================================
+// FEEDBACK VISUAL
+// Mensagens temporárias para informar ações e erros ao usuário.
+// ============================================================================
 function mostrarToast(tipo = "info", mensagem = "", opcoes = {}) {
     if (!dom.toastContainer) return;
 
@@ -116,6 +138,11 @@ function mostrarToast(tipo = "info", mensagem = "", opcoes = {}) {
 // ========== SISTEMA DE MERCADO ==========
 
 // Carregar dados do localStorage
+
+// ============================================================================
+// PERSISTÊNCIA E LISTAS DE COMPRAS
+// Leitura, gravação e apresentação das listas de compras.
+// ============================================================================
 function carregarListas() {
     const dadosListas = localStorage.getItem("listas");
     const dadosSaldos = localStorage.getItem("saldos");
@@ -418,6 +445,11 @@ dom.salvarSaldoBtn.addEventListener("click", () => {
 });
 
 // Gerar texto da lista
+
+// ============================================================================
+// EXPORTAÇÃO E COMPARTILHAMENTO
+// Geração de texto e arquivos a partir dos dados da lista.
+// ============================================================================
 function obterTextoLista() {
     if (!listaAtiva || !listas[listaAtiva].length) return "";
 
@@ -491,6 +523,11 @@ dom.desmarcarTodos?.addEventListener("click", () => {
 });
 
 // Comando de voz (Chrome/Android e navegadores compatíveis)
+
+// ============================================================================
+// ENTRADA POR VOZ
+// Interpretação de produtos, quantidades e preços em português.
+// ============================================================================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (dom.vozBtn) {
     if (!SpeechRecognition) {
@@ -586,6 +623,11 @@ function interpretarVoz(frase) {
 }
 
 // Instalação PWA
+
+// ============================================================================
+// INSTALAÇÃO E NAVEGAÇÃO PWA
+// Fluxo de instalação e troca de telas.
+// ============================================================================
 let deferredPrompt = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; if (dom.instalarApp) dom.instalarApp.style.display = "flex"; });
 dom.instalarApp?.addEventListener("click", async () => {
@@ -606,218 +648,138 @@ function mostrarAba(aba) {
 }
 
 // Sistema de Tarefas
+
+// ============================================================================
+// TAREFAS: PERSISTÊNCIA E QUADRO
+// O arquivo tarefas-plus.js estende estas funções; mantenha os nomes globais compatíveis.
+// ============================================================================
 function carregarTarefas() {
     const dados = localStorage.getItem('tarefas');
     if (dados) {
-        tarefas = JSON.parse(dados);
-        atualizarTarefas();
+        try { tarefas = JSON.parse(dados); } catch (e) { console.error(e); }
     }
+    ['pendente','andamento','concluida'].forEach(c => { if (!Array.isArray(tarefas[c])) tarefas[c] = []; });
+    atualizarTarefas();
+    verificarAlertasTarefas();
 }
 
-function salvarTarefas() {
-    localStorage.setItem('tarefas', JSON.stringify(tarefas));
+function salvarTarefas() { localStorage.setItem('tarefas', JSON.stringify(tarefas)); }
+function escaparHtml(v='') { const d=document.createElement('div'); d.textContent=v; return d.innerHTML; }
+function formatarPrazo(valor) {
+    if (!valor) return '';
+    const d = new Date(valor);
+    return isNaN(d) ? '' : d.toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'});
 }
-
+function classePrazo(tarefa) {
+    if (!tarefa.prazo || tarefa.progresso >= 100) return '';
+    const ms = new Date(tarefa.prazo).getTime() - Date.now();
+    if (ms < 0) return 'prazo-atrasado';
+    if (ms <= 24*60*60*1000) return 'prazo-proximo';
+    return '';
+}
+async function pedirPermissaoNotificacao() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'default') {
+        try { return (await Notification.requestPermission()) === 'granted'; } catch(e) { return false; }
+    }
+    return false;
+}
+async function notificarTarefa(tarefa) {
+    const titulo = '⏰ Prazo da tarefa';
+    const body = `${tarefa.titulo} — prazo ${formatarPrazo(tarefa.prazo)}`;
+    try {
+        const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.ready : null;
+        if (reg && reg.showNotification) await reg.showNotification(titulo, { body, icon:'./assets/icons/icon-192.png', badge:'./assets/icons/icon-192.png', tag:`tarefa-${tarefa.id}` });
+        else if ('Notification' in window && Notification.permission === 'granted') new Notification(titulo, {body});
+    } catch(e) { console.error(e); }
+}
+function verificarAlertasTarefas() {
+    let mudou = false;
+    Object.keys(tarefas).forEach(coluna => tarefas[coluna].forEach(t => {
+        if (!t.prazo || !t.alerta || t.alertaEnviado || t.progresso >= 100) return;
+        if (Date.now() >= new Date(t.prazo).getTime()) {
+            t.alertaEnviado = true; mudou = true;
+            if ('Notification' in window && Notification.permission === 'granted') notificarTarefa(t);
+            mostrarToast('warning', `Prazo: ${t.titulo}`);
+        }
+    }));
+    if (mudou) salvarTarefas();
+    atualizarIndicadoresPrazo();
+}
+function atualizarIndicadoresPrazo() {
+    document.querySelectorAll('.tarefa-item').forEach(el => {
+        const id = Number(el.dataset.id); let t=null;
+        Object.values(tarefas).some(arr => (t=arr.find(x=>x.id===id)));
+        if (t) { el.classList.remove('prazo-atrasado','prazo-proximo'); const c=classePrazo(t); if(c) el.classList.add(c); }
+    });
+}
 function adicionarTarefa() {
     const titulo = dom.tarefaTitulo.value.trim();
     const descricao = dom.tarefaDescricao.value.trim();
-    const progresso = parseInt(dom.tarefaProgresso.value) || 0;
-
-    if (!titulo) {
-        mostrarToast('error', 'Digite um título para a tarefa.');
-        return;
-    }
-
-    const novaTarefa = {
-        id: Date.now(),
-        titulo: titulo,
-        descricao: descricao,
-        progresso: progresso,
-        dataCriacao: new Date().toISOString()
-    };
-
-    // Determinar coluna baseada no progresso
-    let coluna = 'pendente';
-    if (progresso > 0 && progresso < 100) {
-        coluna = 'andamento';
-    } else if (progresso === 100) {
-        coluna = 'concluida';
-    }
-
-    tarefas[coluna].push(novaTarefa);
-    salvarTarefas();
-    atualizarTarefas();
-
-    // Limpar campos
-    dom.tarefaTitulo.value = '';
-    dom.tarefaDescricao.value = '';
-    dom.tarefaProgresso.value = '';
-
+    const progresso = Math.min(100, Math.max(0, parseInt(dom.tarefaProgresso.value) || 0));
+    const prazo = dom.tarefaPrazo.value || '';
+    const alerta = !!dom.tarefaAlerta.checked;
+    if (!titulo) { mostrarToast('error', 'Digite um título para a tarefa.'); return; }
+    const novaTarefa = { id:Date.now(), titulo, descricao, progresso, prazo, alerta, alertaEnviado:false, dataCriacao:new Date().toISOString() };
+    let coluna = progresso === 100 ? 'concluida' : progresso > 0 ? 'andamento' : 'pendente';
+    tarefas[coluna].push(novaTarefa); salvarTarefas(); atualizarTarefas();
+    dom.tarefaTitulo.value=''; dom.tarefaDescricao.value=''; dom.tarefaProgresso.value='0'; dom.tarefaPrazo.value=''; dom.tarefaAlerta.checked=true;
+    const pv=document.getElementById('tarefaProgressoValor'); if(pv) pv.textContent='0%';
+    if (alerta && prazo) pedirPermissaoNotificacao();
     mostrarToast('success', 'Tarefa adicionada com sucesso!');
 }
-
 function atualizarTarefas() {
-    const colunas = ['pendente', 'andamento', 'concluida'];
-
-    colunas.forEach(coluna => {
-        const container = document.getElementById(`tarefas-${coluna}`);
-        container.innerHTML = '';
-
+    ['pendente','andamento','concluida'].forEach(coluna => {
+        const container=document.getElementById(`tarefas-${coluna}`); container.innerHTML='';
         tarefas[coluna].forEach(tarefa => {
-            const tarefaElement = document.createElement('div');
-            tarefaElement.className = `tarefa-item ${coluna === 'concluida' ? 'concluida' : ''}`;
-            tarefaElement.draggable = true;
-            tarefaElement.id = `tarefa-${tarefa.id}`;
-
-            tarefaElement.innerHTML = `
-                <div class="tarefa-header">
-                    <div class="tarefa-titulo">${tarefa.titulo}</div>
-                    <div class="tarefa-acoes">
-                        <button onclick="editarTarefa(${tarefa.id})" class="btn-primary" style="padding: 4px 8px; font-size: 12px;">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="excluirTarefa(${tarefa.id})" class="btn-danger" style="padding: 4px 8px; font-size: 12px;">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                ${tarefa.descricao ? `<div class="tarefa-descricao">${tarefa.descricao}</div>` : ''}
-                <div class="tarefa-progresso">
-                    <div class="progresso-bar">
-                        <div class="progresso-fill" style="width: ${tarefa.progresso}%"></div>
-                    </div>
-                    <div class="progresso-texto">${tarefa.progresso}% concluído</div>
-                </div>
-            `;
-
-            tarefaElement.ondragstart = (e) => dragStarted(e, tarefa.id);
-            container.appendChild(tarefaElement);
+            const el=document.createElement('div');
+            const cp=classePrazo(tarefa);
+            el.className=`tarefa-item ${coluna==='concluida'?'concluida':''} ${cp}`; el.draggable=true; el.id=`tarefa-${tarefa.id}`; el.dataset.id=tarefa.id;
+            const prazoTexto=formatarPrazo(tarefa.prazo);
+            el.innerHTML=`<div class="tarefa-header"><div class="tarefa-titulo">${escaparHtml(tarefa.titulo)}</div><div class="tarefa-acoes">
+                <button onclick="editarTarefa(${tarefa.id})" class="btn-primary tarefa-btn"><i class="fas fa-edit"></i></button>
+                <button onclick="excluirTarefa(${tarefa.id})" class="btn-danger tarefa-btn"><i class="fas fa-trash"></i></button></div></div>
+                ${tarefa.descricao?`<div class="tarefa-descricao">${escaparHtml(tarefa.descricao)}</div>`:''}
+                ${prazoTexto?`<div class="tarefa-prazo"><i class="fas fa-calendar-alt"></i> ${prazoTexto} ${tarefa.alerta?'<i class="fas fa-bell" title="Alerta ativado"></i>':''}</div>`:''}
+                <div class="tarefa-progresso"><div class="progresso-bar"><div class="progresso-fill" style="width:${tarefa.progresso}%"></div></div>
+                <div class="progresso-controles"><input aria-label="Progresso" type="range" min="0" max="100" step="5" value="${tarefa.progresso}" oninput="alterarProgressoTarefa(${tarefa.id}, this.value)"><span>${tarefa.progresso}%</span></div></div>`;
+            el.ondragstart=e=>dragStarted(e,tarefa.id); container.appendChild(el);
         });
     });
 }
-
+function encontrarTarefa(id) { for (const coluna of Object.keys(tarefas)) { const index=tarefas[coluna].findIndex(t=>t.id===id); if(index!==-1) return {tarefa:tarefas[coluna][index], coluna, index}; } return null; }
+function alterarProgressoTarefa(id, valor) {
+    const achou=encontrarTarefa(id); if(!achou)return; const p=Math.min(100,Math.max(0,Number(valor)||0));
+    achou.tarefa.progresso=p; let destino=p===100?'concluida':p>0?'andamento':'pendente';
+    if(destino!==achou.coluna){ tarefas[achou.coluna].splice(achou.index,1); tarefas[destino].push(achou.tarefa); }
+    salvarTarefas(); atualizarTarefas();
+}
 function editarTarefa(id) {
-    // Encontrar a tarefa em qualquer coluna
-    let tarefaEncontrada = null;
-    let colunaEncontrada = null;
-
-    Object.keys(tarefas).forEach(coluna => {
-        const index = tarefas[coluna].findIndex(t => t.id === id);
-        if (index !== -1) {
-            tarefaEncontrada = tarefas[coluna][index];
-            colunaEncontrada = coluna;
-        }
-    });
-
-    if (tarefaEncontrada) {
-        tarefaEditando = { id, coluna: colunaEncontrada };
-        dom.editTarefaTitulo.value = tarefaEncontrada.titulo;
-        dom.editTarefaDescricao.value = tarefaEncontrada.descricao;
-        dom.editTarefaProgresso.value = tarefaEncontrada.progresso;
-        dom.editTarefaModal.style.display = 'block';
-    }
+    const a=encontrarTarefa(id); if(!a)return; tarefaEditando={id,coluna:a.coluna};
+    dom.editTarefaTitulo.value=a.tarefa.titulo; dom.editTarefaDescricao.value=a.tarefa.descricao||''; dom.editTarefaProgresso.value=a.tarefa.progresso||0;
+    dom.editTarefaPrazo.value=a.tarefa.prazo||''; dom.editTarefaAlerta.checked=!!a.tarefa.alerta;
+    const pv=document.getElementById('editTarefaProgressoValor'); if(pv) pv.textContent=(a.tarefa.progresso||0)+'%'; dom.editTarefaModal.style.display='block';
 }
-
 function salvarEdicaoTarefa() {
-    if (!tarefaEditando) return;
-
-    const novoTitulo = dom.editTarefaTitulo.value.trim();
-    const novaDescricao = dom.editTarefaDescricao.value.trim();
-    const novoProgresso = parseInt(dom.editTarefaProgresso.value) || 0;
-
-    if (!novoTitulo) {
-        mostrarToast('error', 'O título da tarefa é obrigatório.');
-        return;
-    }
-
-    // Encontrar e atualizar a tarefa
-    Object.keys(tarefas).forEach(coluna => {
-        const index = tarefas[coluna].findIndex(t => t.id === tarefaEditando.id);
-        if (index !== -1) {
-            tarefas[coluna][index].titulo = novoTitulo;
-            tarefas[coluna][index].descricao = novaDescricao;
-            tarefas[coluna][index].progresso = novoProgresso;
-        }
-    });
-
-    salvarTarefas();
-    atualizarTarefas();
-    fecharTarefaModal();
-    mostrarToast('success', 'Tarefa atualizada com sucesso!');
+    if(!tarefaEditando)return; const a=encontrarTarefa(tarefaEditando.id); if(!a)return;
+    const titulo=dom.editTarefaTitulo.value.trim(); if(!titulo){mostrarToast('error','O título da tarefa é obrigatório.');return;}
+    const p=Math.min(100,Math.max(0,parseInt(dom.editTarefaProgresso.value)||0)); const prazo=dom.editTarefaPrazo.value||'';
+    const prazoMudou=prazo!==a.tarefa.prazo;
+    Object.assign(a.tarefa,{titulo,descricao:dom.editTarefaDescricao.value.trim(),progresso:p,prazo,alerta:!!dom.editTarefaAlerta.checked}); if(prazoMudou)a.tarefa.alertaEnviado=false;
+    const destino=p===100?'concluida':p>0?'andamento':'pendente'; if(destino!==a.coluna){tarefas[a.coluna].splice(a.index,1);tarefas[destino].push(a.tarefa);}
+    salvarTarefas(); atualizarTarefas(); fecharTarefaModal(); if(a.tarefa.alerta&&prazo) pedirPermissaoNotificacao(); mostrarToast('success','Tarefa atualizada com sucesso!');
 }
-
-function excluirTarefa(id) {
-    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
-
-    Object.keys(tarefas).forEach(coluna => {
-        tarefas[coluna] = tarefas[coluna].filter(t => t.id !== id);
-    });
-
-    salvarTarefas();
-    atualizarTarefas();
-    mostrarToast('success', 'Tarefa excluída com sucesso!');
+function excluirTarefa(id) { if(!confirm('Tem certeza que deseja excluir esta tarefa?'))return; Object.keys(tarefas).forEach(c=>tarefas[c]=tarefas[c].filter(t=>t.id!==id)); salvarTarefas(); atualizarTarefas(); mostrarToast('success','Tarefa excluída com sucesso!'); }
+function fecharTarefaModal(){dom.editTarefaModal.style.display='none';tarefaEditando=null;}
+function allowDrop(ev){ev.preventDefault();ev.currentTarget.classList.add('tarefa-drag-over');}
+function dragStarted(ev,id){ev.dataTransfer.setData('tarefaId',id);}
+function dropped(ev){
+    ev.preventDefault(); const id=parseInt(ev.dataTransfer.getData('tarefaId')); const destino=ev.currentTarget.id.replace('coluna-',''); const a=encontrarTarefa(id); if(!a)return;
+    const t=a.tarefa; tarefas[a.coluna].splice(a.index,1); if(destino==='concluida')t.progresso=100; else if(destino==='andamento'&&(t.progresso===0||t.progresso===100))t.progresso=50; else if(destino==='pendente')t.progresso=0;
+    tarefas[destino].push(t); salvarTarefas(); atualizarTarefas(); document.querySelectorAll('.coluna').forEach(c=>c.classList.remove('tarefa-drag-over')); mostrarToast('success','Tarefa movida com sucesso!');
 }
-
-function fecharTarefaModal() {
-    dom.editTarefaModal.style.display = 'none';
-    tarefaEditando = null;
-}
-
-// Drag and Drop
-function allowDrop(ev) {
-    ev.preventDefault();
-    ev.currentTarget.classList.add('tarefa-drag-over');
-}
-
-function dragStarted(ev, tarefaId) {
-    ev.dataTransfer.setData("tarefaId", tarefaId);
-}
-
-function dropped(ev) {
-    ev.preventDefault();
-    const tarefaId = parseInt(ev.dataTransfer.getData("tarefaId"));
-    const colunaDestino = ev.currentTarget.id.replace('coluna-', '');
-
-    // Remover de todas as colunas
-    Object.keys(tarefas).forEach(coluna => {
-        tarefas[coluna] = tarefas[coluna].filter(t => t.id !== tarefaId);
-    });
-
-    // Encontrar a tarefa original
-    let tarefaOriginal = null;
-    Object.keys(tarefas).forEach(coluna => {
-        const tarefa = tarefas[coluna].find(t => t.id === tarefaId);
-        if (tarefa) tarefaOriginal = tarefa;
-    });
-
-    if (!tarefaOriginal) {
-        // Recriar tarefa básica se não encontrada
-        tarefaOriginal = { id: tarefaId, titulo: 'Tarefa', progresso: 0 };
-    }
-
-    // Adicionar na nova coluna
-    tarefas[colunaDestino].push(tarefaOriginal);
-
-    // Atualizar progresso baseado na coluna
-    const index = tarefas[colunaDestino].findIndex(t => t.id === tarefaId);
-    if (index !== -1) {
-        if (colunaDestino === 'concluida') {
-            tarefas[colunaDestino][index].progresso = 100;
-        } else if (colunaDestino === 'andamento') {
-            tarefas[colunaDestino][index].progresso = Math.max(1, tarefas[colunaDestino][index].progresso || 50);
-        }
-    }
-
-    salvarTarefas();
-    atualizarTarefas();
-
-    // Remover classe de drag over
-    document.querySelectorAll('.coluna').forEach(coluna => {
-        coluna.classList.remove('tarefa-drag-over');
-    });
-
-    mostrarToast('success', 'Tarefa movida com sucesso!');
-}
+setInterval(verificarAlertasTarefas, 30000);
 
 // ========== INICIALIZAÇÃO ==========
 
@@ -832,6 +794,11 @@ window.addEventListener('click', (e) => {
 });
 
 // Tecla ESC fecha modal
+
+// ============================================================================
+// EVENTOS E INICIALIZAÇÃO
+// Registre os eventos depois de definir as funções utilizadas.
+// ============================================================================
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         fecharModal();
