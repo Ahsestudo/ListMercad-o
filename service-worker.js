@@ -3,10 +3,10 @@
  * Atualize CACHE ao publicar alterações para descartar versões antigas.
  * Este service worker não implementa notificações push em segundo plano.
  */
-const CACHE = 'listmercadao-v3-organizado-1';
+const CACHE = 'listmercadao-v4-arquivos-1';
 const ASSETS = [
   './', './index.html', './manifest.json', './assets/css/style.css',
-  './assets/js/app.js', './assets/js/tarefas-plus.js',
+  './assets/js/app.js', './assets/js/tarefas-plus.js', './assets/js/compartilhamento-alertas.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];
 

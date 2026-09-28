@@ -120,6 +120,8 @@
                 <button type="button" class="btn-primary" onclick="compartilharWhatsApp()">
                     <i class="fab fa-whatsapp"></i> WhatsApp
                 </button>
+                <button type="button" class="btn-primary" onclick="exportarListaEditavel()">📤 Enviar lista editável</button>
+                <label class="task-import">📥 Abrir lista recebida <input type="file" accept=".json,application/json" onchange="importarListaEditavel(this)"></label>
             </div>
 
             <div class="totalList">
@@ -160,7 +162,7 @@
                 </button>
             </div>
 
-            <div class="card task-tools"><div class="task-tool-buttons"><button type="button" class="btn-primary" onclick="mostrarVisaoTarefas('quadro')">📋 Quadro</button><button type="button" class="btn-primary" onclick="mostrarVisaoTarefas('calendario')">📅 Calendário</button><button type="button" class="btn-primary" onclick="mostrarVisaoTarefas('painel')">📊 Produtividade</button><button type="button" class="btn-primary" onclick="exportarBackupTarefas()">💾 Backup</button><label class="task-import">📂 Restaurar backup <input type="file" accept="application/json,.json" onchange="importarBackupTarefas(this)"></label></div><label>Filtrar <input id="filtroTarefas" placeholder="Buscar título ou etiqueta" oninput="atualizarTarefas()"></label></div><div id="visaoCalendario" class="card" style="display:none"></div><div id="visaoPainel" class="card" style="display:none"></div><div class="tarefas-container" id="visaoQuadro">
+            <div class="card task-tools"><div class="task-tool-buttons"><button type="button" class="btn-primary" onclick="exportarTarefasEditaveis()">📤 Enviar tarefas editáveis</button><label class="task-import">📥 Abrir tarefas recebidas <input type="file" accept=".json,application/json" onchange="importarTarefasEditaveis(this)"></label><button type="button" class="btn-primary" onclick="mostrarVisaoTarefas('quadro')">📋 Quadro</button><button type="button" class="btn-primary" onclick="mostrarVisaoTarefas('calendario')">📅 Calendário</button><button type="button" class="btn-primary" onclick="mostrarVisaoTarefas('painel')">📊 Produtividade</button><button type="button" class="btn-primary" onclick="exportarBackupTarefas()">💾 Backup</button><label class="task-import">📂 Restaurar backup <input type="file" accept="application/json,.json" onchange="importarBackupTarefas(this)"></label></div><label>Filtrar <input id="filtroTarefas" placeholder="Buscar título ou etiqueta" oninput="atualizarTarefas()"></label></div><div id="visaoCalendario" class="card" style="display:none"></div><div id="visaoPainel" class="card" style="display:none"></div><div class="tarefas-container" id="visaoQuadro">
                 <div class="coluna-tarefas" id="colunasTarefas">
                     <div class="coluna" id="coluna-pendente" ondrop="dropped(event)" ondragover="allowDrop(event)">
                         <h4><i class="fas fa-clock"></i> Pendente</h4>
@@ -225,10 +227,12 @@
         </div>
     </div>
 
+    <div class="card" style="margin:12px auto;max-width:980px"><h3>🔔 Som dos lembretes</h3><label><input type="checkbox" id="somAlertas" checked> Tocar som suave ao receber lembretes com o aplicativo aberto</label> <button type="button" class="btn-primary" onclick="habilitarSomAlertas()">▶ Ativar e testar som</button><small id="somAlertasStatus">Toque em “Ativar e testar som” para liberar o áudio neste dispositivo. Com o aplicativo fechado, o navegador controla o som da notificação.</small></div>
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="assets/js/app.js"></script>
     <script src="assets/js/tarefas-plus.js"></script>
+    <script src="assets/js/compartilhamento-alertas.js"></script>
 </body>
 
 </html>
